@@ -72,7 +72,8 @@ species wave{
 	
 	init{
 		waveExists <- true;
-		self.location <- epicenter;
+		point tmp <- one_of(pointCloud).location;
+		self.location <- {tmp.x,tmp.y,0};//epicenter;
 		startCycle <- cycle+30;
 		endCycle <- startCycle+0.5*max([world.shape.width,world.shape.height])/velocity as int;
 		write startCycle;
@@ -84,7 +85,7 @@ species wave{
 		return 0.5*exp(-abs(tmp))*(1+cos(360*min([0,tmp])*caracDist/waveLength))/(1+dist/mitigationDist)^2;
 	}
 	
-	reflex dispose when: cycle = endCycle {
+	reflex dispose when: (cycle = endCycle) or !waveExists {
 		waveExists <- false;
 		do die;
 	}
@@ -109,7 +110,7 @@ experiment OK type:gui {
 			event["z"] action: {angleAxes<-{0,0,1};};
 			event["t"] action: {angleAxes<-{1,1,1};};
 			event["i"] action: {ask pointCloud{location<-source;}};	
-			event["p"] action: {if !waveExists {create wave;}};	
+			event["p"] action: {waveExists <- !waveExists;if waveExists {create wave;}};	
 		}	
 	}
 }
