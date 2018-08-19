@@ -9,7 +9,9 @@ global{
   float pointSize parameter: 'point size ' category: "Visualization" min: 0.1 max:2.0 <- 1.0;
   point angleAxes <-{0,0,1}; 
   point offset <-{0,0,0};
-  
+  list<point> targetOffsetList <- [{200,200,100},{-100,150,-20},{-125,-20,30},{0,0,0}];
+  int currentTarget <- 1;
+  int onTarget <- 0;
   
   bool waveExists <- false;
   point epicenter;
@@ -30,14 +32,37 @@ global{
     at_location {(float(max(column_at (data , 0)))-float(min(column_at (data , 0))))/2,(float(max(column_at (data , 1)))-float(min(column_at (data , 1))))/2,float(min(column_at (data , 2)))};
 	loop i from: 1 to: data.rows -1{
 	  create pointCloud{		
-	    source<-{-offset.x+float(data[0,i]),-offset.y+float(data[1,i]),(float(data[2,i]))-offset.z};
-		target<-{-offset.x+float(data[0,i]),-offset.y+float(data[1,i]),1000+float(data[2,i])-offset.z};	
+	    source<-{-offset.x+float(data[0,i]),-offset.y+float(data[1,i]),float(data[2,i])-offset.z};
+		target<-{-offset.x+float(data[0,i]),-offset.y+float(data[1,i]),float(data[2,i])-offset.z}+targetOffsetList[currentTarget];	
 		location<-source;
 		intensity<-float(data[3,i]);
       }	  
 	}
 	epicenter <- {shape.width/2,shape.height/2,0};
   }
+  
+  
+ 
+  
+  reflex changeTarget when: (onTarget/length(pointCloud) > 0.5){
+  	onTarget <- 0;
+  	currentTarget <- mod(currentTarget+1, length(targetOffsetList));
+  	ask pointCloud {
+  		isOnTarget <- false;
+  		target <- source + targetOffsetList[currentTarget];
+  	}
+  }
+  
+
+//   reflex changeTarget when: (pointCloud count(each.location = each.target)/length(pointCloud) > 0.5   //code plus lent
+//   ){
+//  	onTarget <- 0;
+//  	currentTarget <- mod(currentTarget+1, length(targetOffsetList));
+//  	ask pointCloud {
+//  		//isOnTarget <- false;
+//  		target <- source + targetOffsetList[currentTarget];
+//  	}
+//  }
   
   
 
@@ -47,13 +72,17 @@ species pointCloud skills:[moving]{
 	float intensity;
 	point source;
 	point target;
+	bool isOnTarget <- false;
+
 
 	reflex move{
 		if(wandering){
 		  do wander speed:intensity/1000;	
 		}
 		if(goto){
-		do goto target:target speed:intensity/100000;	
+			do goto target:target speed:intensity/30;			
+			if !isOnTarget and (location = target) {isOnTarget <- true; onTarget <- onTarget + 1;}// c'est un peu crade, mais c'est pour que ça tourne plus vite
+																					// l'autre solution c'est de compter tous ceux qui sont sur la cible à chaque cycle, 
 		}	
 	}
 	
@@ -62,6 +91,7 @@ species pointCloud skills:[moving]{
 			self.location <- myself.location;
 			self.intensity <- myself.intensity;
 			z <- self.location.z;
+			zMin <- z - 150;
 			int theta <- rnd(-180,180);
 			int phi <- rnd(-90,90);
 			rotationAxe <-{ cos(phi) * cos(theta), cos(phi) * sin(theta),sin(phi)};
@@ -108,13 +138,14 @@ species dust skills: [moving]{
 	float intensity;
 	float speed <- 1.0;
 	float z;
+	float zMin;
 	
 	reflex move{
 		speed <- speed * 1.01;
 		z <- z - speed;
-		do wander speed:30/(1+intensity);
+		do wander speed:50/(1+intensity);
 		location <- {location.x, location.y, z};
-		if (z < -50) or !drawDust {do die;}
+		if (z < zMin) or !drawDust {do die;}
 	}
 	
 	aspect base { 
