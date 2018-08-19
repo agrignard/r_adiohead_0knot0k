@@ -89,7 +89,6 @@ species wave{
 		waveExists <- false;
 		do die;
 	}
-	
 }
 
 experiment OK type:gui {
@@ -102,15 +101,16 @@ experiment OK type:gui {
     		}  
         }
 	    species pointCloud aspect:base;
-			event["e"] action: {drawEnv<-!drawEnv;};
-			event["w"] action: {wandering<-!wandering;};
-			event["g"] action: {goto<-!goto;};
-			event["x"] action: {angleAxes<-{1,0,0};};
-			event["y"] action: {angleAxes<-{0,1,0};};
-			event["z"] action: {angleAxes<-{0,0,1};};
-			event["t"] action: {angleAxes<-{1,1,1};};
-			event["i"] action: {ask pointCloud{location<-source;}};	
-			event["p"] action: {waveExists <- !waveExists;if waveExists {create wave;}};	
+			event["1"] action: {drawEnv<-!drawEnv;};
+			event["2"] action: {wandering<-!wandering;};
+			event["3"] action: {goto<-!goto;};
+			event["4"] action: {angleAxes<-{1,0,0};};
+			event["5"] action: {angleAxes<-{0,1,0};};
+			event["6"] action: {angleAxes<-{0,0,1};};
+			event["7"] action: {angleAxes<-{1,1,1};};
+			event["8"] action: {waveExists <- !waveExists;if waveExists {create wave;}};
+			event["9"] action: {ask pointCloud{location<-source;}};	
+				
 		}	
 	}
 }
