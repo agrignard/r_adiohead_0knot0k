@@ -12,7 +12,7 @@ global{
   bool drawEnv<-true;
   float pointSize parameter: 'point size ' category: "Visualization" min: 0.1 max:5.0 <- 1.0;
   init {
-  	matrix data <- matrix(csv_file("../includes/not_ok.csv",""));
+  	matrix data <- matrix(csv_file("../includes/ok.csv",""));
     shape <- computeBoundingBox(data);
 	loop i from: 1 to: data.rows -1{
 		  create pointCloud{		
