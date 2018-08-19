@@ -9,6 +9,17 @@ global{
   point angleAxes <-{0,0,1}; 
   point offset <-{0,0,0};
   
+  
+  bool waveExists <- false;
+  point epicenter;
+  float velocity <- 1.0;
+  float caracDist <- 20.0;
+  float waveLength <- 10;
+  float mitigationDist <-100;
+  float waveOffset <- 50;
+  float waveRotation <- 140;
+
+  
   init {
   	matrix data <- matrix(csv_file("../includes/not_ok.csv",""));
     offset<-{float(min(column_at (data , 0))),float(min(column_at (data , 1))),float(min(column_at (data , 2)))};
@@ -18,11 +29,15 @@ global{
 	  create pointCloud{		
 	    source<-{-offset.x+float(data[0,i]),-offset.y+float(data[1,i]),(float(data[2,i]))-offset.z};
 		target<-{-offset.x+float(data[0,i]),-offset.y+float(data[1,i]),1000+float(data[2,i])-offset.z};	
-		location<-source;		
+		location<-source;
 		intensity<-float(data[3,i]);
       }	  
 	}
+	epicenter <- {shape.width/2,shape.height/2,0};
   }
+  
+  
+
 }
 
 species pointCloud skills:[moving]{
@@ -38,9 +53,42 @@ species pointCloud skills:[moving]{
 		do goto target:target speed:intensity/100000;	
 		}	
 	}
-	aspect base{
-		  draw square(pointSize*intensity/100) color:rgb(intensity*1.1,intensity*1.6,200,50) rotate: cycle*intensity/10::angleAxes;	
+	
+	
+	
+	aspect base { 
+		if waveExists{
+			float mag <-  first(wave).magnitude(self.location);
+			draw rotated_by(square(pointSize*intensity/100),mag*waveRotation,{1,0,0}) color:rgb(intensity*1.1*(1-mag),intensity*1.6*(1-mag),200,50) rotate: cycle*intensity/10::angleAxes at: location + {0,0,mag*waveOffset};	
+		}else{
+			draw square(pointSize*intensity/100) color:rgb(intensity*1.1,intensity*1.6,200,50) rotate: cycle*intensity/10::angleAxes;	
+		}	
 	}
+}
+
+species wave{
+	int startCycle;
+	int endCycle; 
+	
+	init{
+		waveExists <- true;
+		self.location <- epicenter;
+		startCycle <- cycle+30;
+		endCycle <- startCycle+0.5*max([world.shape.width,world.shape.height])/velocity as int;
+		write startCycle;
+	}
+	
+	float magnitude(point p){
+		float dist <- self.location distance_to({p.x,p.y,0});
+		float tmp <- dist/caracDist - velocity/caracDist*(cycle-first(wave).startCycle);
+		return 0.5*exp(-abs(tmp))*(1+cos(360*min([0,tmp])*caracDist/waveLength))/(1+dist/mitigationDist)^2;
+	}
+	
+	reflex dispose when: cycle = endCycle {
+		waveExists <- false;
+		do die;
+	}
+	
 }
 
 experiment OK type:gui {
@@ -61,6 +109,8 @@ experiment OK type:gui {
 			event["z"] action: {angleAxes<-{0,0,1};};
 			event["t"] action: {angleAxes<-{1,1,1};};
 			event["i"] action: {ask pointCloud{location<-source;}};	
+			event["p"] action: {if !waveExists {create wave;}};	
 		}	
 	}
 }
+
