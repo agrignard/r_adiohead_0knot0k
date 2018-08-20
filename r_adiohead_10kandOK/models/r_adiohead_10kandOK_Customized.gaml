@@ -42,6 +42,7 @@ global{
   }
   
   
+  
 	reflex changeTarget when: goto {
 		if (pointCloud count(each.location = each.target)/length(pointCloud) > 0.4){
 			currentTarget <- mod(currentTarget+1, length(targetOffsetList));
@@ -54,6 +55,7 @@ species pointCloud skills:[moving3D]{
 	float intensity;
 	point source;
 	point target;
+	float mag;
 
 	reflex move{
 		if(wandering){
@@ -76,9 +78,15 @@ species pointCloud skills:[moving3D]{
 		}
 	}
 	
+	reflex computeMagnitude{
+		mag <-  first(wave).magnitude(self.location);
+		//write wave accumulate each.magnitude(self.location);
+		//mag <-  mul(wave accumulate each.magnitude(self.location));
+	}
+
+	
 	aspect base { 
 		if waveExists{
-			float mag <-  first(wave).magnitude(self.location);
 			draw rotated_by(square(pointSize*intensity/100),mag*waveRotationAngle,{1,0,0}) color:rgb(intensity*1.1*(1-mag),intensity*1.6*(1-mag),200,50) rotate: cycle*intensity/10::angleAxes at: location + {0,0,mag*waveOffset};	
 		}else{
 			draw square(pointSize*intensity/100) color:rgb(intensity*1.1,intensity*1.6,200,50) rotate: cycle*intensity/10::angleAxes;	
@@ -101,8 +109,9 @@ species wave{
 		self.location <- {tmp.location.x,tmp.location.y,0};//epicenter; 
 		startCycle <- cycle+30;
 		endCycle <- startCycle+ max([world.shape.width-self.location.x,world.shape.height-self.location.y,self.location.x,self.location.y])/velocity as int;
-		write "Wave starts at cycle "+startCycle;
+		write "Wave starts at cycle ";
 	}
+	
 	
 	float magnitude(point p){
 		float dist <- self.location distance_to({p.x,p.y,0});
@@ -112,6 +121,7 @@ species wave{
 	
 	reflex dispose when: (cycle = endCycle) or !waveExists {
 		waveExists <- false;
+		write "killed";
 		do die;
 	}
 }
@@ -158,6 +168,8 @@ experiment OK type:gui {
 			event["t"] action: {angleAxes<-{1,1,1};};
 			event["i"] action: {ask pointCloud{location<-source;}};	
 			event["p"] action: {waveExists <- !waveExists;if waveExists {create wave;}};
+			event["o"] action: {waveExists <- !waveExists;if waveExists {create wave {location <- #user_location;}}};
+			//event["o"] action: {waveExists <- true;create wave {location <- #user_location;}};
 			event["d"] action: {drawDust<-!drawDust;};	
 		}	
 	}
