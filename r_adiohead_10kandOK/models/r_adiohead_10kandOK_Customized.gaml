@@ -6,7 +6,6 @@ global{
   bool goto parameter: 'goto (g)' category: "Visualization" <- false;
   bool drawEnv parameter: 'drawEnv (e)' category: "Visualization" <- false;
   bool variableSize parameter: 'variableSize (b)' category: "Visualization" <- false;
-  bool drawDust parameter: 'dust d' category: "Visualization" <- false;
   bool drawDust parameter: 'dust (d)' category: "Visualization" <- false;
   bool spirals parameter: 'spirales (s)' category: "Visualization" <- false;
   float pointSize parameter: 'point size ' category: "Visualization" min: 0.1 max:2.0 <- 1.0;
@@ -130,7 +129,6 @@ species pointCloud skills:[moving3D]{
 	
 	aspect base { 
 		if waveExists{
-<<<<<<< HEAD
 		 if(variableSize){	
 			draw rotated_by(square(pointSize*intensity/100),mag*waveRotationAngle,{1,0,0}) color:rgb(intensity*1.1*(1-mag),intensity*1.6*(1-mag),200,50) rotate: cycle*intensity/10::angleAxes at: location + {0,0,mag*waveOffset};	
 		 }else{
@@ -143,13 +141,6 @@ species pointCloud skills:[moving3D]{
 		  }else{
 		    draw square(pointSize) color:rgb(intensity*1.1,intensity*1.6,200,50) rotate: cycle*intensity/10::angleAxes;		
 		  }  
-=======
-			draw rotated_by(square(pointSize*intensity/100),mag*waveRotationAngle,{1,0,0}) color:rgb(intensity*1.1*(0.5+spiralCoeff)/1.5*(1-mag),intensity*1.6*(0.5+spiralCoeff)/1.5*(1-mag),200,50) rotate: cycle*intensity/10::angleAxes at: location + {0,0,mag*waveOffset};	
-//			draw rotated_by(square(pointSize*intensity/100),mag*waveRotationAngle,{1,0,0}) color:rgb(intensity*1.1*(1-mag),intensity*1.6*(1-mag),200,50) rotate: cycle*intensity/10::angleAxes at: location + {0,0,mag*waveOffset};	
-		}else{
-		draw rotated_by(square(pointSize*intensity/100),(1-spiralCoeff)*30,{0,1,0}) color:rgb(intensity*1.1*(0.5+spiralCoeff)/1.5,intensity*1.6*(0.5+spiralCoeff)/1.5,200,50) rotate: cycle*intensity/10::angleAxes;
-//			draw square(pointSize*intensity/100) color:rgb(intensity*1.1,intensity*1.6,200,50) rotate: cycle*intensity/10::angleAxes;	
->>>>>>> origin/master
 		}	
 	}
 }
