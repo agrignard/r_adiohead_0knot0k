@@ -8,9 +8,18 @@ global{
   float pointSize parameter: 'point size ' category: "Visualization" min: 0.1 max:2.0 <- 1.0;
   point angleAxes <-{0,0,1}; 
   point offset <-{0,0,0};
-  
+  matrix data;
   init {
-  	matrix data <- matrix(csv_file("../includes/not_ok.csv",""));
+    do initModel();
+  }
+  
+  action initModel{
+    do coreInit();
+    do customInit();
+  }
+  
+  action coreInit{
+  	data <- matrix(csv_file("../includes/not_ok.csv",""));
     offset<-{float(min(column_at (data , 0))),float(min(column_at (data , 1))),float(min(column_at (data , 2)))};
     shape<- box(float(max(column_at (data , 0)))-float(min(column_at (data , 0))),float(max(column_at (data , 1)))-float(min(column_at (data , 1))),float(max(column_at (data , 2)))-float(min(column_at (data , 2)))) 
     at_location {(float(max(column_at (data , 0)))-float(min(column_at (data , 0))))/2,(float(max(column_at (data , 1)))-float(min(column_at (data , 1))))/2,float(min(column_at (data , 2)))};
@@ -21,8 +30,9 @@ global{
 		location<-source;		
 		intensity<-float(data[3,i]);
       }	  
-	}
+	}	
   }
+  action customInit;
 }
 
 species pointCloud skills:[moving]{
@@ -47,6 +57,29 @@ experiment OK type:gui {
 	float minimum_cycle_duration <- 0.0333;
 	output{
 		display pointcloud type:opengl background:rgb(0,0,15)  draw_env:false synchronized:true fullscreen:false toolbar:false{
+    	graphics "env"{
+    		if(drawEnv){
+    		  draw shape color: rgb(50*1.1,50*1.6,200,255) empty:true;	
+    		}  
+        }
+	    species pointCloud aspect:base;
+			event["e"] action: {drawEnv<-!drawEnv;};
+			event["w"] action: {wandering<-!wandering;};
+			event["g"] action: {goto<-!goto;};
+			event["x"] action: {angleAxes<-{1,0,0};};
+			event["y"] action: {angleAxes<-{0,1,0};};
+			event["z"] action: {angleAxes<-{0,0,1};};
+			event["t"] action: {angleAxes<-{1,1,1};};
+			event["i"] action: {ask pointCloud{location<-source;}};	
+		}	
+	}
+}
+
+
+experiment OK_VIRTUAL virtual:true type:gui {
+	float minimum_cycle_duration <- 0.0333;
+	output{
+		display pointcloudVirtual type:opengl virtual:true background:rgb(0,0,15)  draw_env:false synchronized:true fullscreen:false toolbar:false{
     	graphics "env"{
     		if(drawEnv){
     		  draw shape color: rgb(50*1.1,50*1.6,200,255) empty:true;	
