@@ -5,7 +5,8 @@ global{
   bool wandering parameter: 'wandering (w)' category: "Visualization" <- false;
   bool goto parameter: 'goto (g)' category: "Visualization" <- false;
   bool drawEnv parameter: 'drawEnv (e)' category: "Visualization" <- false;
-  bool drawDust parameter: 'dust d' category: "Visualization" <- false;
+  bool drawDust parameter: 'dust (d)' category: "Visualization" <- false;
+  bool spirals parameter: 'spirales (s)' category: "Visualization" <- false;
   float pointSize parameter: 'point size ' category: "Visualization" min: 0.1 max:2.0 <- 1.0;
   point angleAxes <-{0,0,1}; 
   point offset <-{0,0,0};
@@ -37,6 +38,21 @@ global{
 		intensity<-float(data[3,i]);
       }	  
 	}
+	
+	loop i from:0 to: length(pointCloud)-2 {// écrit à la main car distance_at déconne
+		loop j from: i+1 to: length(pointCloud)-1{
+			if (pointCloud[i] distance_to pointCloud[j] < 4){
+				pointCloud[i].neighbours <- pointCloud[i].neighbours + [pointCloud[j]]; 
+				pointCloud[j].neighbours <- pointCloud[j].neighbours + [pointCloud[i]]; 
+			}
+		}
+	}
+
+	ask pointCloud[4310]{
+		self.a <- 1.0;
+		self.b <- 1.0;
+	}
+	write mean(pointCloud accumulate(length(each.neighbours)));
 	maxIntensity <- max(column_at(data,3)) as float;
 	minIntensity <- min(column_at(data,3)) as float;
   }
@@ -56,6 +72,13 @@ species pointCloud skills:[moving3D]{
 	point source;
 	point target;
 	float mag;
+	list<pointCloud> neighbours <- [];
+	
+	float a <- 0.0;
+	float b <- 0.0;
+	float oldA <- 0.0;
+	float oldB <- 0.0;
+	float spiralCoeff <- 1.0;
 
 	reflex move{
 		if(wandering){
@@ -65,6 +88,22 @@ species pointCloud skills:[moving3D]{
 			do goto target:target speed:intensity/30;		
 		}	
 	}
+	
+	reflex updateSpiral when: spirals{
+		oldA <- a;
+		a <- 2 * a * exp(-b);
+		b <- oldA * (1 - exp(-b));
+		oldA <- a;
+		oldB <- b;
+		a <- (1 - 0.8) * a + 0.8 * sum(neighbours collect(each.oldA/length(each.neighbours)));
+		b <- (1 - 0.8) * b + 0.8 * sum(neighbours collect(each.oldB/length(each.neighbours)));
+	}
+	
+		
+	reflex update_color{
+		spiralCoeff <- spirals?(1-min([1,a / 10]))^2:1;
+	}
+	
 	
 	reflex createDust when: drawDust and flip(0.01) {
 		create dust{
@@ -78,6 +117,8 @@ species pointCloud skills:[moving3D]{
 		}
 	}
 	
+	
+	
 	reflex computeMagnitude{
 		mag <-  first(wave).magnitude(self.location);
 		//write wave accumulate each.magnitude(self.location);
@@ -87,9 +128,11 @@ species pointCloud skills:[moving3D]{
 	
 	aspect base { 
 		if waveExists{
-			draw rotated_by(square(pointSize*intensity/100),mag*waveRotationAngle,{1,0,0}) color:rgb(intensity*1.1*(1-mag),intensity*1.6*(1-mag),200,50) rotate: cycle*intensity/10::angleAxes at: location + {0,0,mag*waveOffset};	
+			draw rotated_by(square(pointSize*intensity/100),mag*waveRotationAngle,{1,0,0}) color:rgb(intensity*1.1*(0.5+spiralCoeff)/1.5*(1-mag),intensity*1.6*(0.5+spiralCoeff)/1.5*(1-mag),200,50) rotate: cycle*intensity/10::angleAxes at: location + {0,0,mag*waveOffset};	
+//			draw rotated_by(square(pointSize*intensity/100),mag*waveRotationAngle,{1,0,0}) color:rgb(intensity*1.1*(1-mag),intensity*1.6*(1-mag),200,50) rotate: cycle*intensity/10::angleAxes at: location + {0,0,mag*waveOffset};	
 		}else{
-			draw square(pointSize*intensity/100) color:rgb(intensity*1.1,intensity*1.6,200,50) rotate: cycle*intensity/10::angleAxes;	
+		draw rotated_by(square(pointSize*intensity/100),(1-spiralCoeff)*30,{0,1,0}) color:rgb(intensity*1.1*(0.5+spiralCoeff)/1.5,intensity*1.6*(0.5+spiralCoeff)/1.5,200,50) rotate: cycle*intensity/10::angleAxes;
+//			draw square(pointSize*intensity/100) color:rgb(intensity*1.1,intensity*1.6,200,50) rotate: cycle*intensity/10::angleAxes;	
 		}	
 	}
 }
@@ -111,6 +154,7 @@ species wave{
 		endCycle <- startCycle+ max([world.shape.width-self.location.x,world.shape.height-self.location.y,self.location.x,self.location.y])/velocity as int;
 		write "Wave starts at cycle ";
 	}
+	
 	
 	
 	float magnitude(point p){
@@ -171,6 +215,7 @@ experiment OK type:gui {
 			event["o"] action: {waveExists <- !waveExists;if waveExists {create wave {location <- #user_location;}}};
 			//event["o"] action: {waveExists <- true;create wave {location <- #user_location;}};
 			event["d"] action: {drawDust<-!drawDust;};	
+			event["s"] action: {spirals<-!spirals;};	
 		}	
 	}
 }
