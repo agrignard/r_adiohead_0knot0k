@@ -13,12 +13,13 @@ global{
   int currentTarget <- 1;
 
   
+  float maxIntensity;
+  float minIntensity;
   bool waveExists <- false;
-  point epicenter;
   float velocity <- 1.0;
   float caracDist <- 20.0;
   float waveLength <- 10.0;
-  float mitigationDist <-100.0;
+  float mitigationDist <-60.0;
   float waveOffset <- 50.0;
   float waveRotationAngle <- 140.0;
 
@@ -36,13 +37,16 @@ global{
 		intensity<-float(data[3,i]);
       }	  
 	}
-	epicenter <- {shape.width/2,shape.height/2,0};
+	maxIntensity <- max(column_at(data,3)) as float;
+	minIntensity <- min(column_at(data,3)) as float;
   }
   
   
-	reflex changeTarget when: (pointCloud count(each.location = each.target)/length(pointCloud) > 0.4){
-		currentTarget <- mod(currentTarget+1, length(targetOffsetList));
-		ask pointCloud {target <- source + targetOffsetList[currentTarget];}
+	reflex changeTarget when: goto {
+		if (pointCloud count(each.location = each.target)/length(pointCloud) > 0.4){
+			currentTarget <- mod(currentTarget+1, length(targetOffsetList));
+			ask pointCloud {target <- source + targetOffsetList[currentTarget];}
+		}
   	}
 }
 
@@ -88,10 +92,15 @@ species wave{
 	
 	init{
 		waveExists <- true;
-		point tmp <- one_of(pointCloud).location;
-		self.location <- {tmp.x,tmp.y,0};//epicenter;
+		bool chooseLocation <- true;
+		pointCloud tmp;
+		loop while: chooseLocation {
+			tmp <- one_of(pointCloud);
+			if flip((tmp.intensity-minIntensity)/(maxIntensity-minIntensity)){chooseLocation <- false;}
+		}
+		self.location <- {tmp.location.x,tmp.location.y,0};//epicenter; 
 		startCycle <- cycle+30;
-		endCycle <- startCycle+0.5*max([world.shape.width,world.shape.height])/velocity as int;
+		endCycle <- startCycle+ max([world.shape.width-self.location.x,world.shape.height-self.location.y,self.location.x,self.location.y])/velocity as int;
 		write "Wave starts at cycle "+startCycle;
 	}
 	
