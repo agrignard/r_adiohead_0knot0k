@@ -5,6 +5,7 @@ global{
   bool wandering parameter: 'wandering (w)' category: "Visualization" <- false;
   bool goto parameter: 'goto (g)' category: "Visualization" <- false;
   bool drawEnv parameter: 'drawEnv (e)' category: "Visualization" <- false;
+  bool variableSize parameter: 'variableSize (b)' category: "Visualization" <- false;
   bool drawDust parameter: 'dust d' category: "Visualization" <- false;
   float pointSize parameter: 'point size ' category: "Visualization" min: 0.1 max:2.0 <- 1.0;
   point angleAxes <-{0,0,1}; 
@@ -87,9 +88,18 @@ species pointCloud skills:[moving3D]{
 	
 	aspect base { 
 		if waveExists{
+		 if(variableSize){	
 			draw rotated_by(square(pointSize*intensity/100),mag*waveRotationAngle,{1,0,0}) color:rgb(intensity*1.1*(1-mag),intensity*1.6*(1-mag),200,50) rotate: cycle*intensity/10::angleAxes at: location + {0,0,mag*waveOffset};	
+		 }else{
+		   	draw rotated_by(square(pointSize),mag*waveRotationAngle,{1,0,0}) color:rgb(intensity*1.1*(1-mag),intensity*1.6*(1-mag),200,50) rotate: cycle*intensity/10::angleAxes at: location + {0,0,mag*waveOffset};	
+		 	
+		 }
 		}else{
-			draw square(pointSize*intensity/100) color:rgb(intensity*1.1,intensity*1.6,200,50) rotate: cycle*intensity/10::angleAxes;	
+          if(variableSize){
+		    draw square(pointSize*intensity/100) color:rgb(intensity*1.1,intensity*1.6,200,50) rotate: cycle*intensity/10::angleAxes;		
+		  }else{
+		    draw square(pointSize) color:rgb(intensity*1.1,intensity*1.6,200,50) rotate: cycle*intensity/10::angleAxes;		
+		  }  
 		}	
 	}
 }
@@ -160,6 +170,7 @@ experiment OK type:gui {
         species dust aspect:base;
 	    species pointCloud aspect:base;
 			event["e"] action: {drawEnv<-!drawEnv;};
+			event["b"] action: {variableSize<-!variableSize;};
 			event["w"] action: {wandering<-!wandering;};
 			event["g"] action: {goto<-!goto;};
 			event["x"] action: {angleAxes<-{1,0,0};};
