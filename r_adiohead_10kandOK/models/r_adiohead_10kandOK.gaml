@@ -9,20 +9,18 @@ global{
   float pointSize parameter: 'point size ' category: "Visualization" min: 0.1 max:2.0 <- 1.0;
   point angleAxes <-{0,0,1}; 
   point offset <-{0,0,0};
-  list<point> targetOffsetList <- [{200,200,100},{-100,150,-20},{-125,-20,30},{0,0,0}];
+  list<point> targetOffsetList <- [{0,0,0},{200,200,100},{-100,150,-20},{-125,-20,30}];
   int currentTarget <- 1;
-  int onTarget <- 0;
+
   
   bool waveExists <- false;
   point epicenter;
   float velocity <- 1.0;
   float caracDist <- 20.0;
-  float waveLength <- 10;
-  float mitigationDist <-100;
-  float waveOffset <- 50;
-  float waveRotation <- 140;
-
-  
+  float waveLength <- 10.0;
+  float mitigationDist <-100.0;
+  float waveOffset <- 50.0;
+  float waveRotationAngle <- 140.0;
 
   
   init {
@@ -42,47 +40,23 @@ global{
   }
   
   
- 
-  
-  reflex changeTarget when: (onTarget/length(pointCloud) > 0.5){
-  	onTarget <- 0;
-  	currentTarget <- mod(currentTarget+1, length(targetOffsetList));
-  	ask pointCloud {
-  		isOnTarget <- false;
-  		target <- source + targetOffsetList[currentTarget];
+	reflex changeTarget when: (pointCloud count(each.location = each.target)/length(pointCloud) > 0.4){
+		currentTarget <- mod(currentTarget+1, length(targetOffsetList));
+		ask pointCloud {target <- source + targetOffsetList[currentTarget];}
   	}
-  }
-  
-
-//   reflex changeTarget when: (pointCloud count(each.location = each.target)/length(pointCloud) > 0.5   //code plus lent
-//   ){
-//  	onTarget <- 0;
-//  	currentTarget <- mod(currentTarget+1, length(targetOffsetList));
-//  	ask pointCloud {
-//  		//isOnTarget <- false;
-//  		target <- source + targetOffsetList[currentTarget];
-//  	}
-//  }
-  
-  
-
 }
 
-species pointCloud skills:[moving]{
+species pointCloud skills:[moving3D]{
 	float intensity;
 	point source;
 	point target;
-	bool isOnTarget <- false;
-
 
 	reflex move{
 		if(wandering){
 		  do wander speed:intensity/1000;	
 		}
 		if(goto){
-			do goto target:target speed:intensity/30;			
-			if !isOnTarget and (location = target) {isOnTarget <- true; onTarget <- onTarget + 1;}// c'est un peu crade, mais c'est pour que ça tourne plus vite
-																					// l'autre solution c'est de compter tous ceux qui sont sur la cible à chaque cycle, 
+			do goto target:target speed:intensity/30;		
 		}	
 	}
 	
@@ -101,7 +75,7 @@ species pointCloud skills:[moving]{
 	aspect base { 
 		if waveExists{
 			float mag <-  first(wave).magnitude(self.location);
-			draw rotated_by(square(pointSize*intensity/100),mag*waveRotation,{1,0,0}) color:rgb(intensity*1.1*(1-mag),intensity*1.6*(1-mag),200,50) rotate: cycle*intensity/10::angleAxes at: location + {0,0,mag*waveOffset};	
+			draw rotated_by(square(pointSize*intensity/100),mag*waveRotationAngle,{1,0,0}) color:rgb(intensity*1.1*(1-mag),intensity*1.6*(1-mag),200,50) rotate: cycle*intensity/10::angleAxes at: location + {0,0,mag*waveOffset};	
 		}else{
 			draw square(pointSize*intensity/100) color:rgb(intensity*1.1,intensity*1.6,200,50) rotate: cycle*intensity/10::angleAxes;	
 		}	
@@ -136,13 +110,13 @@ species wave{
 species dust skills: [moving]{
 	point rotationAxe;
 	float intensity;
-	float speed <- 1.0;
+	float zSpeed <- 1.0;
 	float z;
 	float zMin;
 	
 	reflex move{
-		speed <- speed * 1.01;
-		z <- z - speed;
+		zSpeed <- zSpeed * 1.01;
+		z <- z - zSpeed;
 		do wander speed:50/(1+intensity);
 		location <- {location.x, location.y, z};
 		if (z < zMin) or !drawDust {do die;}
