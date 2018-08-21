@@ -8,12 +8,15 @@ global{
   bool variableSize parameter: 'variableSize (b)' category: "Visualization" <- false;
   bool drawDust parameter: 'dust (d)' category: "Visualization" <- false;
   bool spirals parameter: 'spirales (s)' category: "Visualization" <- false;
+  float noiseAmpMax parameter: 'Noise amplitude ' category: "Visualization" min: 0.0 max: 20.0 <- 5.0;
+  float noisePower  parameter: 'Noise irregularity ' category: "Visualization" min: 1.0 max: 20.0 <- 14.0;
   float pointSize parameter: 'point size ' category: "Visualization" min: 0.1 max:2.0 <- 1.0;
   point angleAxes <-{0,0,1}; 
   point offset <-{0,0,0};
   list<point> targetOffsetList <- [{0,0,0},{200,200,100},{-100,150,-20},{-125,-20,30}];
   int currentTarget <- 1;
 
+  float noiseAmp;
   
   float maxIntensity;
   float minIntensity;
@@ -39,26 +42,29 @@ global{
 		intensity<-float(data[3,i]);
       }	  
 	}
-	
-	loop i from:0 to: length(pointCloud)-2 {// écrit à la main car distance_at déconne
-		loop j from: i+1 to: length(pointCloud)-1{
-			if (pointCloud[i] distance_to pointCloud[j] < 4){
-				pointCloud[i].neighbours <- pointCloud[i].neighbours + [pointCloud[j]]; 
-				pointCloud[j].neighbours <- pointCloud[j].neighbours + [pointCloud[i]]; 
-			}
-		}
-	}
+
+////---> INITIALISATION DES VOISINS POUR LES VAGUES. COMMENTE POUR GAGNER DU TEMPS A L'INITIALISATION, NE PAS ENLEVER
+//	loop i from:0 to: length(pointCloud)-2 {// écrit à la main car distance_at déconne
+//		loop j from: i+1 to: length(pointCloud)-1{
+//			if (pointCloud[i] distance_to pointCloud[j] < 4){
+//				pointCloud[i].neighbours <- pointCloud[i].neighbours + [pointCloud[j]]; 
+//				pointCloud[j].neighbours <- pointCloud[j].neighbours + [pointCloud[i]]; 
+//			}
+//		}
+//	}
+////-------------------------------------------------------------------------------------------------------------------
 
 	ask pointCloud[4310]{
 		self.a <- 1.0;
 		self.b <- 1.0;
 	}
-	write mean(pointCloud accumulate(length(each.neighbours)));
 	maxIntensity <- max(column_at(data,3)) as float;
 	minIntensity <- min(column_at(data,3)) as float;
   }
   
-  
+  reflex noizify{
+  	noiseAmp <- noiseAmpMax*(rnd(100)/100)^noisePower;
+  }
   
 	reflex changeTarget when: goto {
 		if (pointCloud count(each.location = each.target)/length(pointCloud) > 0.4){
@@ -96,8 +102,8 @@ species pointCloud skills:[moving3D]{
 		b <- oldA * (1 - exp(-b));
 		oldA <- a;
 		oldB <- b;
-		a <- (1 - 0.8) * a + 0.8 * sum(neighbours collect(each.oldA/length(each.neighbours)));
-		b <- (1 - 0.8) * b + 0.8 * sum(neighbours collect(each.oldB/length(each.neighbours)));
+		a <- 0.2 * a + 0.8 * sum(neighbours collect(each.oldA/length(each.neighbours)));
+		b <- 0.2 * b + 0.8 * sum(neighbours collect(each.oldB/length(each.neighbours)));
 	}
 	
 		
@@ -117,10 +123,10 @@ species pointCloud skills:[moving3D]{
 			rotationAxe <-{ cos(phi) * cos(theta), cos(phi) * sin(theta),sin(phi)};
 		}
 	}
+
 	
 	
-	
-	reflex computeMagnitude{
+	reflex computeMagnitude when: waveExists{
 		mag <-  first(wave).magnitude(self.location);
 		//write wave accumulate each.magnitude(self.location);
 		//mag <-  mul(wave accumulate each.magnitude(self.location));
@@ -129,10 +135,10 @@ species pointCloud skills:[moving3D]{
 	
 	aspect base { 
 		if waveExists{
-			draw rotated_by(square(pointSize* (variableSize ? intensity/100: 1)),mag*waveRotationAngle,{1,0,0}) color:rgb(intensity*1.1*(0.5+spiralCoeff)/1.5*(1-mag),intensity*1.6*(0.5+spiralCoeff)/1.5*(1-mag),200,50) rotate: cycle*intensity/10::angleAxes at: location + {0,0,mag*waveOffset};	
+			draw rotated_by(square(pointSize* (variableSize ? intensity/100: 1)),mag*waveRotationAngle,{1,0,0}) color:rgb(intensity*1.1*(0.5+spiralCoeff)/1.5*(1-mag),intensity*1.6*(0.5+spiralCoeff)/1.5*(1-mag),200,50) rotate: cycle*intensity/10::angleAxes at: location + {0,0,mag*waveOffset} + {0,0,noiseAmp*sqrt(-2*ln(0.01+rnd(99)/100))*cos(360*rnd(100)/100)};	
 //			draw rotated_by(square(pointSize*intensity/100),mag*waveRotationAngle,{1,0,0}) color:rgb(intensity*1.1*(1-mag),intensity*1.6*(1-mag),200,50) rotate: cycle*intensity/10::angleAxes at: location + {0,0,mag*waveOffset};	
 		}else{
-		draw rotated_by(square(pointSize* (variableSize ? intensity/100:1)),(1-spiralCoeff)*30,{0,1,0}) color:rgb(intensity*1.1*(0.5+spiralCoeff)/1.5,intensity*1.6*(0.5+spiralCoeff)/1.5,200,50) rotate: cycle*intensity/10::angleAxes;
+		draw rotated_by(square(pointSize* (variableSize ? intensity/100:1)),(1-spiralCoeff)*30,{0,1,0}) color:rgb(intensity*1.1*(0.5+spiralCoeff)/1.5,intensity*1.6*(0.5+spiralCoeff)/1.5,200,50) rotate: cycle*intensity/10::angleAxes at: location + {0,0,noiseAmp*sqrt(-2*ln(0.01+rnd(99)/100))*cos(360*rnd(100)/100)};
 //			draw square(pointSize*intensity/100) color:rgb(intensity*1.1,intensity*1.6,200,50) rotate: cycle*intensity/10::angleAxes;	
 		}
 	}
