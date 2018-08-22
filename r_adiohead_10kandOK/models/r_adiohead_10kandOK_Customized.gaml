@@ -31,6 +31,7 @@ global{
   
   init {
   	matrix data <- matrix(csv_file("../includes/not_ok.csv",""));
+  	
     offset<-{float(min(column_at (data , 0))),float(min(column_at (data , 1))),float(min(column_at (data , 2)))};
     shape<- box(float(max(column_at (data , 0)))-float(min(column_at (data , 0))),float(max(column_at (data , 1)))-float(min(column_at (data , 1))),float(max(column_at (data , 2)))-float(min(column_at (data , 2)))) 
     at_location {(float(max(column_at (data , 0)))-float(min(column_at (data , 0))))/2,(float(max(column_at (data , 1)))-float(min(column_at (data , 1))))/2,float(min(column_at (data , 2)))};
@@ -42,6 +43,11 @@ global{
 		intensity<-float(data[3,i]);
       }	  
 	}
+
+ask pointCloud {
+	list<pointCloud> l <- self neighbors_at 5000;
+	write length(l);
+}
 
 ////---> INITIALISATION DES VOISINS POUR LES VAGUES. COMMENTE POUR GAGNER DU TEMPS A L'INITIALISATION, NE PAS ENLEVER
 //	loop i from:0 to: length(pointCloud)-2 {// écrit à la main car distance_at déconne
